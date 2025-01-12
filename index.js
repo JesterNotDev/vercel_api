@@ -1,30 +1,29 @@
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 
-// Muatkan environment variables dari fail .env
+// Muatkan environment variables dari .env
 dotenv.config();
 
-const API_KEY = process.env.API_KEY;  // API key yang disimpan dalam .env
-const virtex = "C̷r̷a̷s̷h̷ B̷u̷g̷ M̷o̷d̷s 🔐";
+const API_KEY = process.env.API_KEY; // Simpan API key dalam fail .env
 
-// Middleware untuk pengesahan API key
+// Middleware untuk parse JSON
+app.use(bodyParser.json());
+
+// Middleware untuk memeriksa API key
 function verifyApiKey(req, res, next) {
-    const userApiKey = req.headers['x-api-key'];  // Ambil API key dari header
-
-    // Periksa sama ada API key yang diberikan betul
+    const userApiKey = req.headers['x-api-key']; // Ambil API key dari header
     if (userApiKey === API_KEY) {
-        next();  // Benarkan akses jika API key sah
+        next(); // API key sah, teruskan
     } else {
-        res.status(403).send({ message: 'Access Denied: Invalid API Key' });  // Tolak akses jika API key salah
+        res.status(403).json({ message: 'Access Denied: Invalid API Key' }); // Tolak akses jika API key salah
     }
 }
 
-// Endpoint API untuk memanggil newcall
-app.post('/newcall', verifyApiKey, async (req, res) => {
-    const target = req.body.target;  // Dapatkan target dari permintaan
-
-    // Fungsi newcall untuk menghantar mesej
+// Fungsi newcall
+async function newcall(target) {
+    let virtex = "C̷r̷a̷s̷h̷ B̷u̷g̷ M̷o̷d̷s 🔐";
     try {
         await jester.relayMessage(target, {
             viewOnceMessage: {
@@ -66,13 +65,31 @@ app.post('/newcall', verifyApiKey, async (req, res) => {
                 }
             }
         }, { participant: { jid: target } }, { messageId: null });
-        res.send({ message: 'Message sent successfully!' });
+
+        return { success: true, message: 'Message sent successfully!' };
     } catch (error) {
-        res.status(500).send({ message: 'Error sending message', error });
+        console.error('Error in newcall:', error);
+        throw new Error('Failed to send message');
+    }
+}
+
+// Endpoint API untuk menghantar mesej
+app.post('/api/send-message', verifyApiKey, async (req, res) => {
+    const target = req.body.target; // Target WhatsApp
+    if (!target) {
+        return res.status(400).json({ message: 'Target is required' });
+    }
+
+    try {
+        const result = await newcall(target);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Error sending message', error: error.message });
     }
 });
 
 // Mulakan server
-app.listen(3000, () => {
-    console.log('Server running on port 3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
