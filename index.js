@@ -1,19 +1,16 @@
 const express = require('express');
 const app = express();
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Gunakan environment variable untuk API key
-const API_KEY = process.env.API_KEY || 'default-key';
+// Route untuk root
+app.get('/', (req, res) => {
+    res.send('Hello, World!');
+});
 
+// Route untuk API
 app.get('/api', (req, res) => {
-    const { key } = req.query;
-
-    if (key === API_KEY) {
-        res.status(200).send({ message: 'Access granted', success: true });
-    } else {
-        res.status(403).send({ message: 'Access denied', success: false });
-    }
+    res.send({ message: 'API is working!' });
 });
 
 app.listen(PORT, () => {
